@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Channel Videos</title>
+  <link rel="stylesheet" href="channel.css">
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <div class="header-left">
+        <button id="backBtn" class="icon-btn" title="Back">Back</button>
+        <img id="channelAvatar" class="channel-avatar" alt="" hidden>
+        <div class="header-text">
+          <h1 id="channelTitle" class="channel-title">Channel</h1>
+          <div id="channelMeta" class="channel-meta"></div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="refreshBtn" class="action-btn" title="Refresh">Refresh</button>
+        <a id="openYoutube" class="action-link" target="_blank" rel="noopener">Open YouTube</a>
+        <button id="settingsBtn" class="action-btn secondary" title="Settings">Settings</button>
+      </div>
+    </header>
+
+    <div id="notice" class="notice" hidden></div>
+    <div id="error" class="error" hidden></div>
+    <div id="loading" class="loading" hidden>
+      <span class="spinner"></span>
+      Loading videos...
+    </div>
+
+    <section id="videosSection" class="section" hidden>
+      <h2>Latest 5 Videos</h2>
+      <div id="videosList" class="videos-list"></div>
+    </section>
+  </div>
+
+  <script src="channel.js" type="module"></script>
+</body>
+</html>

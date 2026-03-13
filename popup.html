@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=400">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup">
+    <header class="header">
+      <h1>YT Tracker</h1>
+      <div class="header-actions">
+        <button id="refreshBtn" class="icon-btn" title="Force check now">&#x21bb;</button>
+        <button id="settingsBtn" class="icon-btn" title="Settings">&#x2699;</button>
+      </div>
+    </header>
+
+    <div id="noApiKey" class="notice" hidden>
+      <p>API key not set. <a href="#" id="openSettings">Open Settings</a> to configure.</p>
+    </div>
+
+    <div id="statusBar" class="status-bar" hidden></div>
+
+    <section id="newVideosSection" class="section" hidden>
+      <div class="section-header">
+        <h2>New Videos</h2>
+        <button id="clearVideos" class="text-btn">Clear all</button>
+      </div>
+      <div id="newVideosList" class="new-videos-list"></div>
+    </section>
+
+    <section class="section">
+      <div class="add-channel">
+        <input type="text" id="channelInput" placeholder="YouTube URL, @handle, or channel ID">
+        <button id="addBtn" class="btn-add">Add</button>
+      </div>
+      <div id="addError" class="add-error" hidden></div>
+    </section>
+
+    <section id="channelList" class="channel-list">
+      <div id="emptyState" class="empty-state">
+        <p>No channels tracked yet.</p>
+        <p class="hint">Add a channel above to get started.</p>
+      </div>
+    </section>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

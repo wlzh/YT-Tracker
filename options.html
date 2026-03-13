@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>YouTube Channel Tracker - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>YouTube Channel Tracker</h1>
+      <p class="subtitle">Settings</p>
+    </header>
+
+    <section class="card">
+      <h2>API Key</h2>
+      <p class="help">Enter your <a href="https://console.cloud.google.com/apis/credentials" target="_blank">YouTube Data API v3</a> key.</p>
+      <div class="input-row">
+        <input type="password" id="apiKey" placeholder="AIza..." autocomplete="off">
+        <button id="toggleKey" class="btn-icon" title="Show/hide key">👁</button>
+        <button id="validateKey" class="btn">Validate</button>
+      </div>
+      <div id="keyStatus" class="status" hidden></div>
+    </section>
+
+    <section class="card">
+      <h2>Check Interval</h2>
+      <p class="help">How often to check for new videos and update subscriber counts.</p>
+      <div class="input-row">
+        <select id="interval">
+          <option value="5">Every 5 minutes</option>
+          <option value="10">Every 10 minutes</option>
+          <option value="15" selected>Every 15 minutes</option>
+          <option value="30">Every 30 minutes</option>
+          <option value="60">Every 60 minutes</option>
+        </select>
+      </div>
+      <p class="quota-estimate" id="quotaEstimate"></p>
+    </section>
+
+    <section class="card">
+      <h2>Notifications</h2>
+      <label class="toggle-label">
+        <input type="checkbox" id="notifications" checked>
+        <span>Show browser notifications for new uploads</span>
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>Data Management</h2>
+      <div class="btn-row">
+        <button id="exportData" class="btn">Export Data (JSON)</button>
+        <button id="clearData" class="btn btn-danger">Clear All Data</button>
+      </div>
+    </section>
+
+    <div id="saveStatus" class="save-status" hidden>Settings saved</div>
+  </div>
+
+  <script src="options.js" type="module"></script>
+</body>
+</html>
