@@ -167,7 +167,9 @@ async function checkAllChannels() {
         const latest = await api.getLatestVideo(channel.uploadsPlaylistId);
         if (!latest) continue;
 
-        if (channel.lastVideoId && latest.videoId !== channel.lastVideoId) {
+        const isNewVideo = Boolean(channel.lastVideoId && latest.videoId !== channel.lastVideoId);
+
+        if (isNewVideo) {
           // New video found
           const video = {
             videoId: latest.videoId,
@@ -195,6 +197,9 @@ async function checkAllChannels() {
         const updatedChannels = await StorageManager.getChannels();
         if (updatedChannels[id]) {
           updatedChannels[id].lastVideoId = latest.videoId;
+          if (isNewVideo) {
+            updatedChannels[id].lastUpdatedAt = new Date().toISOString();
+          }
           await StorageManager.set({ channels: updatedChannels });
         }
       } catch (err) {
