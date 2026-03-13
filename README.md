@@ -78,6 +78,77 @@ UCX6OQ3DkcsbYNE6H8uQQuVA
 
 点击「Add」，频道信息自动加载并开始追踪。
 
+---
+
+## 批量导入：从「订阅频道」一次性导入到插件
+
+> 目标：把你 YouTube 账号里「订阅 → 频道」页面的所有订阅，批量导入到本插件的追踪列表。
+>
+> 说明：插件 UI 的输入框一次只能添加 1 个频道（这是设计如此）。因此批量导入推荐走 **DevTools Console 批处理**，不需要改插件代码。
+
+### A. 导出订阅页面 HTML
+
+1. 用 Chrome 登录你的 YouTube 账号
+2. 进入：左侧「订阅内容」→「频道」（URL 通常是 `https://www.youtube.com/feed/channels`）
+3. 滚动到底（确保所有订阅频道都已加载出来）
+4. 保存页面 HTML（任选一种方式）：
+   - 方式 1：`Ctrl/Cmd + S` → “网页，全部” 保存成 `.html`
+   - 方式 2：安装 SingleFile 扩展保存（也可以）
+
+### B. 从 HTML 提取所有 @handle
+
+仓库内提供脚本：`tools/extract_handles_from_channels_html.py`
+
+```bash
+python3 tools/extract_handles_from_channels_html.py \
+  "/path/to/所有订阅频道 - YouTube (...).html" \
+  -o handles.txt
+```
+
+输出 `handles.txt`：每行一个 `@handle`（已去重）。
+
+### C. 转成 Console 可用的 JSON 数组字符串
+
+仓库内提供脚本：`tools/handles_to_console_json.py`
+
+```bash
+python3 tools/handles_to_console_json.py handles.txt -o handles.json
+```
+
+输出 `handles.json`（内容是一行 JSON 数组字符串），例如：
+
+```json
+["@joeyblog","@mkbhd", "@tech-shrimp"]
+```
+
+### D. 在插件里一键批量加入
+
+1. 先在插件 Settings 里配置好 **YouTube Data API Key**（否则添加会报错：API key not set）
+2. 打开插件弹窗（有输入框和 Add 按钮的那个）
+3. 在弹窗里右键空白处 → **Inspect** → Console
+4. 把下面脚本粘贴进去：
+
+```js
+// 1) 把 handles 替换成 handles.json 的内容（JSON 数组字符串）
+const handles = ["@joeyblog","@mkbhd","@tech-shrimp"]; // ← 替换这里
+
+// 2) 批量添加
+(async () => {
+  for (const h of handles) {
+    try {
+      const res = await chrome.runtime.sendMessage({ type: "addChannel", input: h });
+      console.log("added", h, res);
+    } catch (e) {
+      console.warn("failed", h, e?.message || e);
+    }
+    // 小延迟，避免打太快
+    await new Promise(r => setTimeout(r, 250));
+  }
+})();
+```
+
+运行后你会在 Console 里看到逐条 added/failed 的日志；插件列表也会逐渐出现新加入的频道。
+
 ### 4. 查看数据
 
 - **弹窗主页**：查看所有频道的订阅数、增长趋势、新视频提醒
