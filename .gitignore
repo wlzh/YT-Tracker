@@ -1,3 +1,4 @@
 .DS_Store
 yt-tracker-extension.zip
 .claude/
+tools/__pycache__/
