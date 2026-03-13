@@ -70,9 +70,9 @@ YouTube Channel Tracker 是一款 Chrome 浏览器扩展，帮你集中监控多
 在插件弹窗的输入框中，粘贴以下任意格式：
 
 ```
-https://www.youtube.com/@MrBeast
+https://www.youtube.com/@gxjdian
 https://www.youtube.com/channel/UCX6OQ3DkcsbYNE6H8uQQuVA
-@mkbhd
+@gxjdian
 UCX6OQ3DkcsbYNE6H8uQQuVA
 ```
 
@@ -118,7 +118,7 @@ python3 tools/handles_to_console_json.py handles.txt -o handles.json
 输出 `handles.json`（内容是一行 JSON 数组字符串），例如：
 
 ```json
-["@joeyblog","@mkbhd", "@tech-shrimp"]
+["@gxjdian","@gxjdian", "@gxjdian"]
 ```
 
 ### D. 在插件里一键批量加入
@@ -130,7 +130,7 @@ python3 tools/handles_to_console_json.py handles.txt -o handles.json
 
 ```js
 // 1) 把 handles 替换成 handles.json 的内容（JSON 数组字符串）
-const handles = ["@joeyblog","@mkbhd","@tech-shrimp"]; // ← 替换这里
+const handles = ["@gxjdian","@gxjdian","@gxjdian"]; // ← 替换这里
 
 // 2) 批量添加
 (async () => {
