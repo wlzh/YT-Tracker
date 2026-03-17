@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YouTube Channel Tracker",
-  "version": "1.0.0",
-  "description": "Track YouTube channel subscriber counts and get notified about new uploads.",
+  "version": "2.0.0",
+  "description": "Track YouTube channels for new uploads using RSS feeds (no API key needed) or YouTube Data API.",
   "permissions": [
     "storage",
     "alarms",

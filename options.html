@@ -13,8 +13,21 @@
     </header>
 
     <section class="card">
+      <h2>Check Mode</h2>
+      <p class="help">RSS mode uses official YouTube feeds - no API key needed, no quota limits!</p>
+      <label class="toggle-label">
+        <input type="checkbox" id="useRSS" checked>
+        <span><strong>RSS Mode</strong> (recommended, no API key required)</span>
+      </label>
+      <p class="mode-info" id="modeInfo">
+        RSS mode: ~5-30 min delay, unlimited checks, no quota concerns.<br>
+        API mode: Near real-time, requires API key, limited quota.
+      </p>
+    </section>
+
+    <section class="card">
       <h2>API Key</h2>
-      <p class="help">Enter your <a href="https://console.cloud.google.com/apis/credentials" target="_blank">YouTube Data API v3</a> key.</p>
+      <p class="help">Only needed for <strong>API mode</strong>. Get your key from <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>.</p>
       <div class="input-row">
         <input type="password" id="apiKey" placeholder="AIza..." autocomplete="off">
         <button id="toggleKey" class="btn-icon" title="Show/hide key">👁</button>

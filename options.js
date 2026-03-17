@@ -4,14 +4,17 @@ import { YouTubeAPI } from './lib/youtube-api.js';
 const $ = (sel) => document.querySelector(sel);
 
 async function init() {
-  const { apiKey, checkIntervalMinutes, notificationsEnabled, channels } = await StorageManager.getAll();
+  const { apiKey, checkIntervalMinutes, notificationsEnabled, useRSS, channels } = await StorageManager.getAll();
 
   const keyInput = $('#apiKey');
   keyInput.value = apiKey;
 
   $('#interval').value = String(checkIntervalMinutes);
   $('#notifications').checked = notificationsEnabled;
-  updateQuotaEstimate(Object.keys(channels || {}).length, checkIntervalMinutes);
+  $('#useRSS').checked = useRSS !== false;  // Default to true
+  
+  updateModeInfo(useRSS !== false);
+  updateQuotaEstimate(Object.keys(channels || {}).length, checkIntervalMinutes, useRSS !== false);
 
   // API key toggle visibility
   $('#toggleKey').addEventListener('click', () => {
@@ -74,6 +77,19 @@ async function init() {
     showSaved();
   });
 
+  // RSS mode toggle
+  $('#useRSS').addEventListener('change', async (e) => {
+    const useRSS = e.target.checked;
+    await chrome.runtime.sendMessage({
+      type: 'updateSettings',
+      settings: { useRSS }
+    });
+    updateModeInfo(useRSS);
+    const ch = await StorageManager.getChannels();
+    updateQuotaEstimate(Object.keys(ch).length, Number($('#interval').value), useRSS);
+    showSaved();
+  });
+
   // Export
   $('#exportData').addEventListener('click', async () => {
     const data = await StorageManager.exportData();
@@ -95,7 +111,21 @@ async function init() {
   });
 }
 
-function updateQuotaEstimate(channelCount, intervalMinutes) {
+function updateModeInfo(useRSS) {
+  const modeInfo = $('#modeInfo');
+  if (useRSS) {
+    modeInfo.innerHTML = '<span style="color: #4CAF50;">✓ RSS Mode active</span> - No API key required, unlimited quota, ~5-30 min delay.';
+  } else {
+    modeInfo.innerHTML = '<span style="color: #FF9800;">⚠ API Mode active</span> - Requires API key, near real-time, limited to 10,000 units/day.';
+  }
+}
+
+function updateQuotaEstimate(channelCount, intervalMinutes, useRSS) {
+  if (useRSS) {
+    $('#quotaEstimate').textContent = 'RSS mode: No quota limits! 🎉';
+    return;
+  }
+  
   const checksPerDay = Math.floor(1440 / intervalMinutes);
   // Each check: 1 channels.list call (batched) + 1 playlistItems.list per channel
   const batchCalls = Math.ceil(channelCount / 50);

@@ -1,5 +1,6 @@
 import { StorageManager } from './lib/storage.js';
 import { YouTubeAPI } from './lib/youtube-api.js';
+import { YouTubeRSS } from './lib/youtube-rss.js';
 import { resolveChannel } from './lib/channel-resolver.js';
 import { formatNumber } from './lib/utils.js';
 
@@ -126,79 +127,134 @@ async function ensureAlarm() {
 }
 
 async function checkAllChannels() {
-  const apiKey = await StorageManager.getApiKey();
-  if (!apiKey) return;
-
+  const settings = await StorageManager.getSettings();
+  const useRSS = settings.useRSS !== false; // Default to RSS mode
+  
   const channels = await StorageManager.getChannels();
   const channelIds = Object.keys(channels);
   if (!channelIds.length) return;
 
-  const api = new YouTubeAPI(apiKey);
-  const { notificationsEnabled } = await StorageManager.getSettings();
+  const { notificationsEnabled } = settings;
+  const rss = new YouTubeRSS();
 
   try {
-    // Batch fetch channel stats (up to 50 per request, 1 unit each)
-    const items = await api.getChannels(channelIds);
-    for (const item of items) {
-      const subCount = Number(item.statistics.subscriberCount) || 0;
-      const oldCount = channels[item.id]?.subscriberCount ?? subCount;
-      await StorageManager.updateChannelStats(item.id, subCount);
+    // RSS mode: no channel stats (subscriber count), but can check videos
+    if (useRSS) {
+      // Check each channel for new videos using RSS
+      for (const id of channelIds) {
+        const channel = channels[id];
+        
+        try {
+          const latest = await rss.getLatestVideo(id);
+          if (!latest) continue;
 
-      // 订阅数变化时推送通知
-      if (notificationsEnabled && subCount !== oldCount) {
-        const diff = subCount - oldCount;
-        const sign = diff > 0 ? '+' : '';
-        const channelName = channels[item.id]?.title || item.snippet.title;
-        chrome.notifications.create(`yt-sub-${item.id}-${Date.now()}`, {
-          type: 'basic',
-          iconUrl: channels[item.id]?.thumbnail || 'icons/icon128.png',
-          title: `${channelName} 订阅数变化`,
-          message: `${formatNumber(oldCount)} → ${formatNumber(subCount)} (${sign}${formatNumber(diff)})`
-        });
-      }
-    }
+          if (channel.lastVideoId && latest.videoId !== channel.lastVideoId) {
+            // New video found
+            const video = {
+              videoId: latest.videoId,
+              title: latest.title,
+              thumbnail: latest.thumbnail,
+              publishedAt: latest.publishedAt,
+              channelTitle: latest.channelTitle || channel.title,
+              channelId: latest.channelId || id,
+              detectedAt: new Date().toISOString()
+            };
 
-    // Check each channel for new videos
-    for (const id of channelIds) {
-      const channel = channels[id];
-      if (!channel.uploadsPlaylistId) continue;
+            await StorageManager.addNewVideo(video);
 
-      try {
-        const latest = await api.getLatestVideo(channel.uploadsPlaylistId);
-        if (!latest) continue;
-
-        if (channel.lastVideoId && latest.videoId !== channel.lastVideoId) {
-          // New video found
-          const video = {
-            videoId: latest.videoId,
-            title: latest.title,
-            thumbnail: latest.thumbnail,
-            publishedAt: latest.publishedAt,
-            channelTitle: latest.channelTitle,
-            channelId: latest.channelId,
-            detectedAt: new Date().toISOString()
-          };
-
-          await StorageManager.addNewVideo(video);
-
-          if (notificationsEnabled) {
-            chrome.notifications.create(`yt-video-${latest.videoId}`, {
-              type: 'basic',
-              iconUrl: channel.thumbnail || 'icons/icon128.png',
-              title: `New video from ${latest.channelTitle}`,
-              message: latest.title
-            });
+            if (notificationsEnabled) {
+              chrome.notifications.create(`yt-video-${latest.videoId}`, {
+                type: 'basic',
+                iconUrl: channel.thumbnail || 'icons/icon128.png',
+                title: `New video from ${video.channelTitle}`,
+                message: latest.title
+              });
+            }
           }
-        }
 
-        // Update last known video
-        const updatedChannels = await StorageManager.getChannels();
-        if (updatedChannels[id]) {
-          updatedChannels[id].lastVideoId = latest.videoId;
-          await StorageManager.set({ channels: updatedChannels });
+          // Update last known video
+          const updatedChannels = await StorageManager.getChannels();
+          if (updatedChannels[id]) {
+            updatedChannels[id].lastVideoId = latest.videoId;
+            await StorageManager.set({ channels: updatedChannels });
+          }
+        } catch (err) {
+          console.warn(`Failed to check videos for ${channel.title}:`, err.message);
         }
-      } catch (err) {
-        console.warn(`Failed to check videos for ${channel.title}:`, err.message);
+      }
+    } else {
+      // API mode (legacy): requires API key
+      const apiKey = await StorageManager.getApiKey();
+      if (!apiKey) {
+        console.warn('API key not set, skipping API mode check');
+        return;
+      }
+
+      const api = new YouTubeAPI(apiKey);
+
+      // Batch fetch channel stats (up to 50 per request, 1 unit each)
+      const items = await api.getChannels(channelIds);
+      for (const item of items) {
+        const subCount = Number(item.statistics.subscriberCount) || 0;
+        const oldCount = channels[item.id]?.subscriberCount ?? subCount;
+        await StorageManager.updateChannelStats(item.id, subCount);
+
+        // 订阅数变化时推送通知
+        if (notificationsEnabled && subCount !== oldCount) {
+          const diff = subCount - oldCount;
+          const sign = diff > 0 ? '+' : '';
+          const channelName = channels[item.id]?.title || item.snippet.title;
+          chrome.notifications.create(`yt-sub-${item.id}-${Date.now()}`, {
+            type: 'basic',
+            iconUrl: channels[item.id]?.thumbnail || 'icons/icon128.png',
+            title: `${channelName} 订阅数变化`,
+            message: `${formatNumber(oldCount)} → ${formatNumber(subCount)} (${sign}${formatNumber(diff)})`
+          });
+        }
+      }
+
+      // Check each channel for new videos
+      for (const id of channelIds) {
+        const channel = channels[id];
+        if (!channel.uploadsPlaylistId) continue;
+
+        try {
+          const latest = await api.getLatestVideo(channel.uploadsPlaylistId);
+          if (!latest) continue;
+
+          if (channel.lastVideoId && latest.videoId !== channel.lastVideoId) {
+            // New video found
+            const video = {
+              videoId: latest.videoId,
+              title: latest.title,
+              thumbnail: latest.thumbnail,
+              publishedAt: latest.publishedAt,
+              channelTitle: latest.channelTitle,
+              channelId: latest.channelId,
+              detectedAt: new Date().toISOString()
+            };
+
+            await StorageManager.addNewVideo(video);
+
+            if (notificationsEnabled) {
+              chrome.notifications.create(`yt-video-${latest.videoId}`, {
+                type: 'basic',
+                iconUrl: channel.thumbnail || 'icons/icon128.png',
+                title: `New video from ${latest.channelTitle}`,
+                message: latest.title
+              });
+            }
+          }
+
+          // Update last known video
+          const updatedChannels = await StorageManager.getChannels();
+          if (updatedChannels[id]) {
+            updatedChannels[id].lastVideoId = latest.videoId;
+            await StorageManager.set({ channels: updatedChannels });
+          }
+        } catch (err) {
+          console.warn(`Failed to check videos for ${channel.title}:`, err.message);
+        }
       }
     }
   } catch (err) {
