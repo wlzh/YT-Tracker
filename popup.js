@@ -129,8 +129,21 @@ function renderChannels(channels) {
     return;
   }
 
-  // Sort by added time, newest first
-  entries.sort((a, b) => new Date(b[1].addedAt) - new Date(a[1].addedAt));
+  // Sort by last updated (new video detected) time desc first, then added time desc
+  entries.sort((a, b) => {
+    const aUpdated = a[1].lastUpdatedAt ? new Date(a[1].lastUpdatedAt).getTime() : 0;
+    const bUpdated = b[1].lastUpdatedAt ? new Date(b[1].lastUpdatedAt).getTime() : 0;
+
+    // Both have an update timestamp: most recent first
+    if (aUpdated && bUpdated) return bUpdated - aUpdated;
+
+    // Only one has an update timestamp: that one goes first
+    if (aUpdated && !bUpdated) return -1;
+    if (!aUpdated && bUpdated) return 1;
+
+    // Fallback: keep existing behavior
+    return new Date(b[1].addedAt) - new Date(a[1].addedAt);
+  });
 
   container.innerHTML = entries.map(([id, ch]) => {
     const growth = computeGrowth(ch.subscriberHistory || []);
@@ -150,7 +163,10 @@ function renderChannels(channels) {
             <span class="sub-count">${formatNumber(ch.subscriberCount)} subscribers</span>
             ${growth.html}
           </div>
-          <div class="channel-meta">${ch.lastChecked ? 'Checked ' + timeAgo(ch.lastChecked) : 'Not checked yet'}</div>
+          <div class="channel-meta">
+            Updated ${ch.lastUpdatedAt ? timeAgo(ch.lastUpdatedAt) : '—'} ·
+            ${ch.lastChecked ? 'Checked ' + timeAgo(ch.lastChecked) : 'Not checked yet'}
+          </div>
           ${sparkline ? `<div class="channel-sparkline">${sparkline}</div>` : ''}
         </div>
         <div class="channel-actions">
